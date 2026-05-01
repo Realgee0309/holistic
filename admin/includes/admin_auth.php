@@ -277,7 +277,8 @@ function adminFoot(): void {
     </body></html>
 <?php
 }
-// expose renderFlash for admin pages
+// expose renderFlash for admin pages (guard against redeclaration from db.php)
+if (!function_exists('renderFlash')) {
 function renderFlash(): void {
     if (session_status() === PHP_SESSION_NONE) session_start();
     if (!isset($_SESSION['flash'])) return;
@@ -286,3 +287,4 @@ function renderFlash(): void {
     $type = $flash['type'] ?? 'success';
     echo '<div class="flash ' . $type . '"><i class="fas fa-' . ($type==='success'?'check-circle':'exclamation-circle') . '"></i> ' . htmlspecialchars($flash['message']) . '</div>';
 }
+} // end function_exists guard
