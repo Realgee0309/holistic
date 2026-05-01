@@ -217,6 +217,7 @@ function adminHead(string $title, string $subtitle = ''): void {
             <i class="fas fa-comments"></i> Client Chat
             <?php if ($unreadMsgCount > 0): ?><span class="nav-badge blue"><?= $unreadMsgCount ?></span><?php endif; ?>
         </a>
+        <a href="payments.php"  class="nav-item <?= $current==='payments.php'  ?'active':'' ?>"><i class="fas fa-wallet"></i> Payments</a>
         <a href="users.php"     class="nav-item <?= $current==='users.php'     ?'active':'' ?>"><i class="fas fa-users"></i> Clients</a>
 
         <div class="nav-section-label" style="margin-top:.75rem">Content</div>

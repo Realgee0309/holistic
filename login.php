@@ -69,7 +69,7 @@ require_once __DIR__ . '/includes/header.php';
 
     <div class="auth-footer">
       <p style="margin:0 0 .8rem">Don't have an account? <a href="register.php">Create one</a></p>
-      <a href="forgot_password.php">Forgot your password?</a>
+      <a href="forgot-password.php">Forgot your password?</a>
     </div>
   </div>
 </div>

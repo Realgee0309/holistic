@@ -14,6 +14,10 @@ $bookings = $pdo->prepare("SELECT * FROM bookings WHERE user_id = :uid ORDER BY 
 $bookings->execute([':uid' => $user['id']]);
 $bookings = $bookings->fetchAll();
 
+$payments = $pdo->prepare("SELECT p.*, b.service, b.preferred_date FROM payments p JOIN bookings b ON b.id = p.booking_id WHERE b.user_id = :uid ORDER BY p.created_at DESC");
+$payments->execute([':uid' => $user['id']]);
+$payments = $payments->fetchAll();
+
 $messages = $pdo->prepare("SELECT * FROM contacts WHERE user_id = :uid ORDER BY created_at DESC");
 $messages->execute([':uid' => $user['id']]);
 $messages = $messages->fetchAll();
@@ -38,6 +42,8 @@ $totalSessions   = count($bookings);
 $confirmedSessions = count(array_filter($bookings, fn($b) => $b['status'] === 'confirmed'));
 $pendingSessions = count(array_filter($bookings, fn($b) => $b['status'] === 'pending'));
 $totalNotes      = count($notes);
+$totalPayments   = count($payments);
+$totalSpent      = array_reduce($payments, fn($sum, $p) => $sum + floatval($p['amount']), 0);
 
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -93,6 +99,113 @@ require_once __DIR__ . '/includes/header.php';
 .empty-state .ei { font-size: 3rem; margin-bottom: 1rem; }
 .empty-state p { font-size: 0.9rem; }
 .empty-state a { color: var(--primary); font-weight: 600; text-decoration: none; }
+.resource-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.resource-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(90, 125, 124, 0.1);
+}
+
+.resource-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.resource-card h3 {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.resource-card p {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.assessment-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: all 0.3s;
+}
+
+.assessment-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(90, 125, 124, 0.1);
+}
+
+.assessment-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.assessment-icon {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.assessment-header h3 {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.assessment-header p {
+    color: #666;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.assessment-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-end;
+}
+
+.assessment-time,
+.assessment-status {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.assessment-status {
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .assessment-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .assessment-meta {
+        align-items: center;
+    }
+}
 </style>
 
 <!-- Hero -->
@@ -134,6 +247,10 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="dash-stat-num"><?= $totalNotes ?></div>
                 <div class="dash-stat-label">Progress Notes</div>
             </div>
+            <div class="dash-stat">
+                <div class="dash-stat-num">KES <?= number_format($totalSpent, 0) ?></div>
+                <div class="dash-stat-label">Total Spent</div>
+            </div>
         </div>
 
         <!-- Tabs -->
@@ -142,6 +259,9 @@ require_once __DIR__ . '/includes/header.php';
             <a href="?tab=bookings"  class="dash-tab <?= $activeTab==='bookings'  ? 'active':'' ?>"><i class="fas fa-calendar-check"></i> My Bookings <span class="tab-count"><?= $totalSessions ?></span></a>
             <a href="?tab=notes"     class="dash-tab <?= $activeTab==='notes'     ? 'active':'' ?>"><i class="fas fa-notes-medical"></i> Progress Notes <span class="tab-count"><?= $totalNotes ?></span></a>
             <a href="?tab=messages"  class="dash-tab <?= $activeTab==='messages'  ? 'active':'' ?>"><i class="fas fa-envelope"></i> Messages <span class="tab-count"><?= count($messages) ?></span></a>
+            <a href="?tab=resources" class="dash-tab <?= $activeTab==='resources' ? 'active':'' ?>"><i class="fas fa-book-open"></i> Resources</a>
+            <a href="?tab=payments" class="dash-tab <?= $activeTab==='payments' ? 'active':'' ?>"><i class="fas fa-wallet"></i> Payments <span class="tab-count"><?= $totalPayments ?></span></a>
+            <a href="?tab=assessments" class="dash-tab <?= $activeTab==='assessments' ? 'active':'' ?>"><i class="fas fa-clipboard-list"></i> Assessments</a>
         </div>
 
         <!-- ── OVERVIEW TAB ── -->
@@ -261,6 +381,7 @@ require_once __DIR__ . '/includes/header.php';
 
         <!-- ── MESSAGES TAB ── -->
         <?php elseif ($activeTab === 'messages'): ?>
+
         <div class="panel">
             <div class="panel-head"><h2>✉️ Messages You've Sent</h2><a href="contact.php" class="btn btn-sm btn-primary">+ New Message</a></div>
             <?php if (empty($messages)): ?>
@@ -286,6 +407,170 @@ require_once __DIR__ . '/includes/header.php';
             <?php endforeach; ?>
             <?php endif; ?>
         </div>
+
+        <!-- ── RESOURCES TAB ── -->
+        <?php elseif ($activeTab === 'resources'): ?>
+        <div class="panel">
+            <div class="panel-head"><h2>📚 Self-Help Resources</h2></div>
+            <div style="padding: 1.5rem;">
+                <p style="color: #666; margin-bottom: 2rem;">Access helpful articles, exercises, and tools to support your mental wellness journey.</p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                    <div class="resource-card">
+                        <div class="resource-icon">🧘‍♀️</div>
+                        <h3>Mindfulness Exercises</h3>
+                        <p>Simple breathing and meditation techniques you can practice daily.</p>
+                        <a href="#" class="btn btn-sm btn-primary">View Exercises</a>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">📝</div>
+                        <h3>Journaling Prompts</h3>
+                        <p>Thought-provoking questions to help you reflect and process your emotions.</p>
+                        <a href="#" class="btn btn-sm btn-primary">Get Prompts</a>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">💪</div>
+                        <h3>Coping Strategies</h3>
+                        <p>Evidence-based techniques for managing stress, anxiety, and difficult emotions.</p>
+                        <a href="#" class="btn btn-sm btn-primary">Learn More</a>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">🎯</div>
+                        <h3>Goal Setting</h3>
+                        <p>Tools and worksheets to help you set and achieve your personal goals.</p>
+                        <a href="#" class="btn btn-sm btn-primary">Start Setting Goals</a>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">🌙</div>
+                        <h3>Sleep Hygiene</h3>
+                        <p>Tips for better sleep and managing sleep-related anxiety.</p>
+                        <a href="#" class="btn btn-sm btn-primary">Sleep Better</a>
+                    </div>
+
+                    <div class="resource-card">
+                        <div class="resource-icon">🤝</div>
+                        <h3>Relationship Tools</h3>
+                        <p>Communication exercises and tools for healthier relationships.</p>
+                        <a href="#" class="btn btn-sm btn-primary">Explore Tools</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PAYMENTS TAB ── -->
+        <?php elseif ($activeTab === 'payments'): ?>
+        <div class="panel">
+            <div class="panel-head"><h2>💳 Payment History</h2></div>
+            <?php if (empty($payments)): ?>
+            <div class="empty-state"><div class="ei">💳</div><p>No payments yet. Your completed payments will appear here after booking and checkout.</p></div>
+            <?php else: ?>
+            <div class="booking-list">
+                <?php foreach ($payments as $p): ?>
+                <div class="booking-item">
+                    <div class="booking-date-box">
+                        <div class="day"><?= date('d', strtotime($p['created_at'])) ?></div>
+                        <div class="month"><?= date('M', strtotime($p['created_at'])) ?></div>
+                    </div>
+                    <div class="booking-info">
+                        <h3><?= htmlspecialchars($p['service']) ?></h3>
+                        <p><?= htmlspecialchars($p['method']) ?> · KES <?= number_format($p['amount'], 0) ?></p>
+                        <p style="margin-top:0.35rem; font-size:0.85rem; color:#6b7280;">Transaction: <?= htmlspecialchars($p['transaction_id'] ?? $p['reference'] ?? 'N/A') ?></p>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.5rem">
+                        <span class="badge badge-<?= $p['status'] ?>"><?= ucfirst($p['status']) ?></span>
+                        <?php if ($p['status'] === 'pending'): ?>
+                        <span style="font-size:0.75rem;color:#f59e0b;">Awaiting confirmation</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- ── ASSESSMENTS TAB ── -->
+        <?php elseif ($activeTab === 'assessments'): ?>
+        <div class="panel">
+            <div class="panel-head"><h2>📋 Assessments & Questionnaires</h2></div>
+            <div style="padding: 1.5rem;">
+                <p style="color: #666; margin-bottom: 2rem;">Complete assessments to better understand your mental health and track your progress over time.</p>
+
+                <div style="display: grid; gap: 1.5rem;">
+                    <div class="assessment-card">
+                        <div class="assessment-header">
+                            <div class="assessment-icon">📊</div>
+                            <div>
+                                <h3>GAD-7 Anxiety Assessment</h3>
+                                <p>Generalized Anxiety Disorder questionnaire - 7 questions</p>
+                            </div>
+                        </div>
+                        <div class="assessment-meta">
+                            <span class="assessment-time">⏱️ 2-3 minutes</span>
+                            <span class="assessment-status">Not completed</span>
+                        </div>
+                        <a href="../assessment.php" class="btn btn-sm btn-primary">Take GAD-7</a>
+                    </div>
+
+                    <div class="assessment-card">
+                        <div class="assessment-header">
+                            <div class="assessment-icon">😢</div>
+                            <div>
+                                <h3>PHQ-9 Depression Screening</h3>
+                                <p>Patient Health Questionnaire for depression - 9 questions</p>
+                            </div>
+                        </div>
+                        <div class="assessment-meta">
+                            <span class="assessment-time">⏱️ 2-3 minutes</span>
+                            <span class="assessment-status">Not completed</span>
+                        </div>
+                        <a href="#" class="btn btn-sm btn-primary">Take Assessment</a>
+                    </div>
+
+                    <div class="assessment-card">
+                        <div class="assessment-header">
+                            <div class="assessment-icon">❤️</div>
+                            <div>
+                                <h3>Relationship Satisfaction Scale</h3>
+                                <p>Assess the quality and satisfaction in your relationships</p>
+                            </div>
+                        </div>
+                        <div class="assessment-meta">
+                            <span class="assessment-time">⏱️ 5 minutes</span>
+                            <span class="assessment-status">Not completed</span>
+                        </div>
+                        <a href="#" class="btn btn-sm btn-primary">Take Assessment</a>
+                    </div>
+
+                    <div class="assessment-card">
+                        <div class="assessment-header">
+                            <div class="assessment-icon">🎯</div>
+                            <div>
+                                <h3>Life Satisfaction Survey</h3>
+                                <p>Evaluate your overall satisfaction with different life domains</p>
+                            </div>
+                        </div>
+                        <div class="assessment-meta">
+                            <span class="assessment-time">⏱️ 3-4 minutes</span>
+                            <span class="assessment-status">Not completed</span>
+                        </div>
+                        <a href="#" class="btn btn-sm btn-primary">Take Assessment</a>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; padding: 1.5rem; background: #f0f8ff; border-radius: 12px; border-left: 4px solid var(--primary);">
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--primary);">📋 Why Take Assessments?</h4>
+                    <p style="margin: 0; color: #555; font-size: 0.9rem;">
+                        These standardized questionnaires help you and your therapist understand your current mental health status.
+                        Your responses are confidential and help create a more personalized treatment plan.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <?php endif; ?>
     </div>
 </div>

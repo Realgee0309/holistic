@@ -92,7 +92,7 @@ if (!empty($_SESSION['dev_reset_link'])): ?>
                 <li><a href="<?= $root ?>about.php"    class="<?= isActive('about.php') ?>">About</a></li>
                 <li><a href="<?= $root ?>services.php" class="<?= isActive('services.php') ?>">Services</a></li>
                 <li><a href="<?= $root ?>blog.php"     class="<?= isActive('blog.php') ?> <?= isActive('blog_post.php') ?>">Resources</a></li>
-                <li><a href="<?= $root ?>book.php"     class="<?= isActive('book.php') ?>">Book</a></li>
+                <li><a href="<?= $root ?>calendar.php" class="<?= isActive('calendar.php') ?>">Book Session</a></li>
                 <li><a href="<?= $root ?>faq.php"      class="<?= isActive('faq.php') ?>">FAQ</a></li>
                 <li><a href="<?= $root ?>contact.php"  class="<?= isActive('contact.php') ?>">Contact</a></li>
             </ul>

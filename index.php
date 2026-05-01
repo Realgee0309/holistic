@@ -148,7 +148,7 @@ $heroHeadSafe = preg_replace('/\bWellbeing\b/', '<span>Wellbeing</span>', $heroH
             <h1><?= $heroHeadSafe ?></h1>
             <p><?= htmlspecialchars($heroSub) ?></p>
             <div class="hero-cta">
-                <a href="book.php" class="btn btn-whatsapp">
+                <a href="calendar.php" class="btn btn-whatsapp">
                     <i class="fab fa-whatsapp"></i> Book via WhatsApp
                 </a>
                 <a href="services.php" class="btn btn-primary">Explore Services</a>
@@ -281,7 +281,7 @@ $heroHeadSafe = preg_replace('/\bWellbeing\b/', '<span>Wellbeing</span>', $heroH
         <div class="cta-content">
             <h2>Ready to Begin Your Healing Journey?</h2>
             <p>Take the first step toward positive change. Book a session through WhatsApp — we respond within 24 hours.</p>
-            <a href="book.php" class="btn btn-light">Book Your Session Today</a>
+            <a href="calendar.php" class="btn btn-light">Book Your Session Today</a>
         </div>
     </div>
 </section>
